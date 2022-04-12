@@ -1,0 +1,19 @@
+{
+  "name": "pb_bot_farmer",
+  "version": "1.0.0",
+  "description": "bot-farmer for politbuild",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "pystyle",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.3",
+    "mineflayer": "^4.2.0",
+    "mineflayer-auto-auth": "^1.0.0",
+    "mineflayer-auto-eat": "^2.3.3",
+    "mineflayer-navigate": "^0.0.10",
+    "mineflayer-scaffold": "^1.0.0"
+  }
+}
