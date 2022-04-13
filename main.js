@@ -31,7 +31,6 @@ bot.on('serverAuth', function() {
 
 bot.on('chat', (username, message) => {
     if (username === bot.username) return
-    if (message === "примите в иран") bot.chat(`/t add ${username}`)
 	if (message === "start-farmer-bot") {
 		dig_harvest = 1;
 		cosmicLooper();
