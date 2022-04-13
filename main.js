@@ -14,11 +14,12 @@ var dig_harvest = 0;
 const bot = mineflayer.createBot({
     host: 'mc.politbuild.ru', 
     version: "1.18.1",
-    username: "sbuw4ik",
+    username: "sbuw4ik", //ник если пиратка, почта если лицензия
+    //password: " pass", //если лицензия
 	plugins: [AutoAuth],
 	AutoAuth: {
-		logging: true,
-		password: '19332a',
+		logging: true, 
+		password: '19332a', // пароль от /reg /login
 		ignoreRepeat: true,
 	}
 })
