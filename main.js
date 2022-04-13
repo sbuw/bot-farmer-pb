@@ -1,12 +1,13 @@
 const mineflayer = require('mineflayer')
 const autoeat = require('mineflayer-auto-eat')
 const AutoAuth = require('mineflayer-auto-auth')
+const { pathfinder, Movements } = require('mineflayer-pathfinder')
+const { GoalNear } = require('mineflayer-pathfinder').goals
 
 const vec3 = require('vec3');
 var cropType = 'wheat_seeds'
 var seedName = 'wheat_seeds';
 var harvestName = 'wheat';
-var chestPosition;
 var mcData;
 var dig_harvest = 0;
 
@@ -23,12 +24,9 @@ const bot = mineflayer.createBot({
 })
 
 bot.on('serverAuth', function() {
-	bot.quit();
+        const p = bot.position
+	bot.pathfinder.setGoal(new GoalNear(p.x, p.y + 16, p.z, 1)) 
   });
-
-bot.on('login', () => {
-	//bot.chat('./l 19332a')
-})
 
 bot.on('chat', (username, message) => {
     if (username === bot.username) return
@@ -39,10 +37,20 @@ bot.on('chat', (username, message) => {
 	}
 	if (message === "stop-farmer-bot") dig_harvest = 0;
 	if (message === "quit-farmer-bot") bot.quit();
+    if (message === 'come') {
+      const target = bot.players[username]?.entity
+      if (!target) {
+        bot.chat('I don\'t see you !')
+        return
+      }
+      const p = target.position
+
+      bot.pathfinder.setGoal(new GoalNear(p.x, p.y, p.z, 1))
   })
 
 // Load the plugin
 bot.loadPlugin(autoeat)
+bot.loadPlugin(pathfinder)
 
 bot.once('spawn', () => {
   bot.autoEat.options = {
