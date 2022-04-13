@@ -9,8 +9,7 @@ var mcData;
 var dig_harvest = 0;
 
 const bot = mineflayer.createBot({
-    //host: 'mc.politbuild.ru', 
-	port: 3250,
+    host: 'mc.politbuild.ru', 
 	version: "1.18.1",
     username: "sbuw4ik", //ник если пиратка, почта если лицензия
     //password: "pass", //если лицензия
