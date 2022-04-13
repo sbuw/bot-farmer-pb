@@ -1,21 +1,19 @@
 const mineflayer = require('mineflayer')
 const autoeat = require('mineflayer-auto-eat')
 const AutoAuth = require('mineflayer-auto-auth')
-const { pathfinder, Movements } = require('mineflayer-pathfinder')
-const { GoalNear } = require('mineflayer-pathfinder').goals
-
+const { pathfinder, Movements, goals: { GoalNear}} = require('mineflayer-pathfinder')
 const vec3 = require('vec3');
-var cropType = 'wheat_seeds'
 var seedName = 'wheat_seeds';
 var harvestName = 'wheat';
 var mcData;
 var dig_harvest = 0;
 
 const bot = mineflayer.createBot({
-    host: 'mc.politbuild.ru', 
-    version: "1.18.1",
+    //host: 'mc.politbuild.ru', 
+	port: 3250,
+	version: "1.18.1",
     username: "sbuw4ik", //ник если пиратка, почта если лицензия
-    //password: " pass", //если лицензия
+    //password: "pass", //если лицензия
 	plugins: [AutoAuth],
 	AutoAuth: {
 		logging: true, 
@@ -24,43 +22,53 @@ const bot = mineflayer.createBot({
 	}
 })
 
-bot.on('serverAuth', function() {
-        const p = bot.position
-	bot.pathfinder.setGoal(new GoalNear(p.x, p.y + 16, p.z, 1)) 
-  });
+// Load the plugin
+bot.loadPlugin(autoeat)
+bot.loadPlugin(pathfinder)
 
-bot.on('chat', (username, message) => {
-    if (username === bot.username) return
+bot.on('serverAuth', function() {
+    const target = bot.entity
+	const { x: botX, y: botY, z: botZ} = target.position
+	bot.pathfinder.setGoal(new GoalNear(botX - 17, botY, botZ, 0)) 
+})
+
+bot.on('login', () => {
+	bot.autoEat.options = {
+		priority: 'foodPoints',
+    	startAt: 14,
+    	bannedFood: []
+  	}
+	const mcData = require('minecraft-data')(bot.version);
+  	const defaultMove = new Movements(bot, mcData);
+	bot.pathfinder.setMovements(defaultMove)
+	defaultMove.scafoldingBlocks = [59]
+	defaultMove.allowFreeMotion = true
+
+})
+
+bot.once('spawn', () => {
+	dig_harvest = 0;
+})
+
+bot.on('chat', function(username, message) {
+	if (username === bot.username) return
 	if (message === "start-farmer-bot") {
 		dig_harvest = 1;
 		cosmicLooper();
 	}
 	if (message === "stop-farmer-bot") dig_harvest = 0;
 	if (message === "quit-farmer-bot") bot.quit();
-    if (message === 'come') {
-      const target = bot.players[username]?.entity
-      if (!target) {
-        bot.chat('I don\'t see you !')
-        return
-      }
-      const p = target.position
-
-      bot.pathfinder.setGoal(new GoalNear(p.x, p.y, p.z, 1))
-  })
-
-// Load the plugin
-bot.loadPlugin(autoeat)
-bot.loadPlugin(pathfinder)
-
-bot.once('spawn', () => {
-  bot.autoEat.options = {
-    priority: 'foodPoints',
-    startAt: 14,
-    bannedFood: []
-  }
-  mcData = require('minecraft-data')(bot.version);
-  dig_harvest = 0;
+	if (message === 'comebt') {
+		const target = bot.players[username]?.entity
+		if (!target) {
+			bot.chat('I don\'t see you !')
+			return
+		  }
+		const { x: playerX, y: playerY, z: playerZ} = target.position
+		bot.pathfinder.setGoal(new GoalNear(playerX, playerY, playerZ, 0))
+	}
 })
+
 // The bot eats food automatically and emits these events when it starts eating and stops eating.
 
 bot.on('autoeat_started', () => {
@@ -93,6 +101,7 @@ async function cosmicLooper() {
 }
 
 async function depositLoop() {
+	const mcData = require('minecraft-data')(bot.version);
 	let chestBlock = bot.findBlock({
 		matching: mcData.blocksByName['chest'].id,
 	});
@@ -112,7 +121,9 @@ async function depositLoop() {
 				await chest.deposit(slot.type, null, slot.count);
 			}
 		}
-		chest.close();
+		
+		chest.close()
+		
 	} else {
 		bot.lookAt(chestBlock.position);
 		bot.setControlState('forward', true);
@@ -141,6 +152,7 @@ async function farmLoop() {
 		}
 	}
 }
+
 
 function readyCrop() {
 	return bot.findBlock({

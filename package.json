@@ -14,6 +14,7 @@
     "mineflayer-auto-auth": "^1.0.0",
     "mineflayer-auto-eat": "^2.3.3",
     "mineflayer-navigate": "^0.0.10",
+    "mineflayer-pathfinder": "^2.0.0",
     "mineflayer-scaffold": "^1.0.0"
   }
 }
