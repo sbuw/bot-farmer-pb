@@ -2,6 +2,7 @@ const mineflayer = require('mineflayer')
 const autoeat = require('mineflayer-auto-eat')
 const AutoAuth = require('mineflayer-auto-auth')
 const { pathfinder, Movements, goals: { GoalNear}} = require('mineflayer-pathfinder')
+const inventoryViewer = require('mineflayer-web-inventory')
 const vec3 = require('vec3');
 var seedName = 'wheat_seeds';
 var harvestName = 'wheat';
@@ -10,23 +11,29 @@ var dig_harvest = 0;
 
 const bot = mineflayer.createBot({
     host: 'mc.politbuild.ru', 
-	version: "1.18.1",
-    username: "sbuw4ik", //ник если пиратка, почта если лицензия
-    //password: "pass", //если лицензия
+	//port: 3457,
+	version: "1.18.1", //версия на которой работает бот ( 1.16.5 - 1.18  для полита)
+    username: "cumpotbt", //ник если пиратка, почта если лицензия
+    //password: "password", //если лицензия
+	//auth: 'mojang', // если лог через mojang можно и через microsoft
 	plugins: [AutoAuth],
 	AutoAuth: {
 		logging: true, 
-		password: '19332a', // пароль от /reg /login
+		password: 'password', // пароль от /reg /login
 		ignoreRepeat: true,
 	}
 })
+
+//inventoryViewer(bot) // чтоб видеть инвентарь бота ( http://localhost:3000/ )
 
 // Load the plugin
 bot.loadPlugin(autoeat)
 bot.loadPlugin(pathfinder)
 
 bot.on('serverAuth', function() {
-    const target = bot.entity
+	var date = new Date();
+    console.log(`Im [${bot.username}] logging! | ${date.getDate()}.${date.getMonth()}.${date.getUTCFullYear()} - ${date.getHours()}:${date.getMinutes()}`)
+	const target = bot.entity
 	const { x: botX, y: botY, z: botZ} = target.position
 	bot.pathfinder.setGoal(new GoalNear(botX - 17, botY, botZ, 0)) 
 })
@@ -46,25 +53,34 @@ bot.on('login', () => {
 })
 
 bot.once('spawn', () => {
+	//bot.pathfinder.stop()
 	dig_harvest = 0;
+	//cosmicLooper();
 })
 
-bot.on('chat', function(username, message) {
+bot.on('whisper', function(username, message) {
 	if (username === bot.username) return
-	if (message === "start-farmer-bot") {
+	if (message === "startbt") {
+		bot.pathfinder.stop()
 		dig_harvest = 1;
 		cosmicLooper();
 	}
-	if (message === "stop-farmer-bot") dig_harvest = 0;
-	if (message === "quit-farmer-bot") bot.quit();
+	if (message === "stopbt") {
+		bot.pathfinder.stop()
+		dig_harvest = 0;
+	}
+	if (message === "quitbt") bot.quit();
 	if (message === 'comebt') {
+		bot.pathfinder.stop()
 		const target = bot.players[username]?.entity
 		if (!target) {
-			bot.chat('I don\'t see you !')
 			return
 		  }
 		const { x: playerX, y: playerY, z: playerZ} = target.position
 		bot.pathfinder.setGoal(new GoalNear(playerX, playerY, playerZ, 0))
+	}
+	if (message === "testbt") {
+		bot.chat("/reply what?")
 	}
 })
 
@@ -120,13 +136,41 @@ async function depositLoop() {
 				await chest.deposit(slot.type, null, slot.count);
 			}
 		}
-		
+
+		await withdrawItem("wheat_seeds", 32)
+
 		chest.close()
 		
 	} else {
 		bot.lookAt(chestBlock.position);
 		bot.setControlState('forward', true);
 	}
+
+	function itemByName (items, name) {
+		let item
+		let i
+		for (i = 0; i < items.length; ++i) {
+		  item = items[i]
+		  if (item && item.name === name) return item
+		}
+		return null
+	  }
+
+	async function withdrawItem (name, amount) {
+		const chest = await bot.openChest(chestBlock)
+		const item = itemByName(chest.containerItems(), name)
+		if (item) {
+		  try {
+			await chest.withdraw(item.type, null, amount)
+			console.log(`withdrew ${amount} ${item.name}`)
+			await bot.equip(mcData.itemsByName[seedName].id)
+		  } catch (err) {
+			console.log(`unable to withdraw ${amount} ${item.name}`)
+		  }
+		} else {
+		  console.log(`unknown item ${name}`)
+		}
+	  }
 }
 
 async function farmLoop() {
@@ -151,7 +195,6 @@ async function farmLoop() {
 		}
 	}
 }
-
 
 function readyCrop() {
 	return bot.findBlock({
